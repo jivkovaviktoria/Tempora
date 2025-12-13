@@ -150,4 +150,47 @@ public class ReminderEngineTests
         Assert.Equal(expected, nextExecution);
     }
 
+    /// <summary>
+    /// Verifies that when a scheduled day falls on a weekend and weekends are excluded,
+    /// the execution is moved to the next business day.
+    /// </summary>
+    [Fact]
+    public void CalculateNext_WhenScheduledDayIsWeekendAndWeekendsExcluded_SkipsToMonday()
+    {
+        var rule = ReminderRule
+            .Weekly(DayOfWeek.Saturday)
+            .At(10, 30)
+            .InTimeZone("UTC");
+
+        var calendar = BusinessCalendar
+            .Default()
+            .ExcludeWeekends();
+
+        var now = new DateTimeOffset(
+            year: 2025,
+            month: 1,
+            day: 3,   // Friday
+            hour: 9,
+            minute: 0,
+            second: 0,
+            offset: TimeSpan.Zero);
+
+        var nextExecution = ReminderEngine.CalculateNext(
+            rule,
+            lastExecution: null,
+            now,
+            calendar);
+
+        var expected = new DateTimeOffset(
+            year: 2025,
+            month: 1,
+            day: 6,   // Monday
+            hour: 10,
+            minute: 30,
+            second: 0,
+            offset: TimeSpan.Zero);
+
+        Assert.Equal(expected, nextExecution);
+    }
+
 }
