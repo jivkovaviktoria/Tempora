@@ -26,6 +26,11 @@
             BusinessCalendar calendar,
             MissedExecutionPolicy missedExecutionPolicy = MissedExecutionPolicy.RunLastOnly)
         {
+            if (rule.DayOfMonth.HasValue)
+            {
+                return CalculateNextMonthly(rule, now, calendar);
+            }
+
             if (rule.DaysOfWeek is null || rule.DaysOfWeek.Count == 0)
             {
                 throw new InvalidOperationException("Weekly rule must define at least one weekday.");
@@ -74,5 +79,79 @@
 
             return candidates.Min();
         }
+
+        /// <summary>
+        /// Calculates the next execution time for a monthly reminder rule.
+        /// </summary>
+        private static DateTimeOffset CalculateNextMonthly(ReminderRule rule, DateTimeOffset now, BusinessCalendar calendar)
+        {
+            var nowInZone = TimeZoneInfo.ConvertTime(now, rule.TimeZone);
+            var targetDay = rule.DayOfMonth!.Value;
+
+            var startYear = nowInZone.Year;
+            var startMonth = nowInZone.Month;
+
+            for (var offsetMonths = 0; offsetMonths < 12; offsetMonths++)
+            {
+                var candidateMonth = new DateTime(startYear, startMonth, 1).AddMonths(offsetMonths);
+
+                if (!TryCreateLocalDateTime(candidateMonth.Year, candidateMonth.Month, targetDay, rule, out var candidateLocal))
+                {
+                    continue;
+                }
+
+                if (offsetMonths == 0 && candidateLocal <= nowInZone.DateTime)
+                {
+                    continue;
+                }
+
+                //(default: roll forward)
+                var executionDate = calendar.AdjustToBusinessDay(DateOnly.FromDateTime(candidateLocal));
+
+                var executionDateTime = new DateTime(
+                    executionDate.Year,
+                    executionDate.Month,
+                    executionDate.Day,
+                    rule.TimeOfDay.Hour,
+                    rule.TimeOfDay.Minute,
+                    0,
+                    DateTimeKind.Unspecified
+                );
+
+                var offset = rule.TimeZone.GetUtcOffset(executionDateTime);
+                return new DateTimeOffset(executionDateTime, offset);
+            }
+
+            throw new InvalidOperationException("Unable to calculate next monthly execution within a one-year window.");
+        }
+
+
+        /// <summary>
+        /// Attempts to create a local DateTime for the given year, month and rule day.
+        /// Returns false if the day does not exist in the month.
+        /// </summary>
+        private static bool TryCreateLocalDateTime(int year, int month, int day, ReminderRule rule, out DateTime result)
+        {
+            try
+            {
+                result = new DateTime(
+                    year,
+                    month,
+                    day,
+                    rule.TimeOfDay.Hour,
+                    rule.TimeOfDay.Minute,
+                    0,
+                    DateTimeKind.Unspecified
+                );
+
+                return true;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                result = default;
+                return false;
+            }
+        }
+
     }
 }
