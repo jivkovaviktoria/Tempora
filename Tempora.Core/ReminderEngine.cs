@@ -26,6 +26,11 @@
             BusinessCalendar calendar,
             MissedExecutionPolicy missedExecutionPolicy = MissedExecutionPolicy.RunLastOnly)
         {
+            if (rule.DaysOfWeek is null || rule.DaysOfWeek.Count == 0)
+            {
+                throw new InvalidOperationException("Weekly rule must define at least one weekday.");
+            }
+
             var nowInZone = TimeZoneInfo.ConvertTime(now, rule.TimeZone);
             var startDate = DateOnly.FromDateTime(nowInZone.DateTime);
 
@@ -35,15 +40,17 @@
             {
                 var date = startDate.AddDays(i);
 
-                if (!rule.DaysOfWeek!.Contains(date.DayOfWeek))
+                if (!rule.DaysOfWeek.Contains(date.DayOfWeek))
                 {
                     continue;
                 }
 
+                var executionDate = calendar.AdjustToBusinessDay(date);
+
                 var localDateTime = new DateTime(
-                    date.Year,
-                    date.Month,
-                    date.Day,
+                    executionDate.Year,
+                    executionDate.Month,
+                    executionDate.Day,
                     rule.TimeOfDay.Hour,
                     rule.TimeOfDay.Minute,
                     0,
@@ -58,6 +65,7 @@
                     candidates.Add(candidate);
                 }
             }
+
 
             if (candidates.Count == 0)
             {
