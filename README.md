@@ -19,75 +19,94 @@ Despite being common, time-based logic is often:
 
 It provides a clean, extensible way to define scheduling rules and calculate the next valid execution time under real business constraints.
 
-## Core Principles
+## Features (v1.0.0)
 
-**Tempora** is built around a few key principles:
-- Deterministic behavior
-Given the same inputs, Tempora always produces the same result.
+- Weekly scheduling (single or multiple weekdays)
+- Monthly scheduling on a fixed day of month (1–31)
+- Time zone–aware execution calculation
+- Business calendar support with weekend exclusion
+- Default roll-forward behavior for non-business days
+- Deterministic, test-driven calculation engine
 
-- Business-aware scheduling
-Supports business calendars, holidays, weekends, and working days.
+---
 
-- Time zone safety
-Uses explicit time zone handling and avoids implicit system time.
+## What Tempora Is (and Is Not)
 
-- Pure calculation, no side effects
-Tempora calculates when something should happen — it does not execute jobs.
+### ✔ Tempora **is**
+- A scheduling **calculation engine**
+- Deterministic and side-effect free
+- Explicit about business rules and defaults
+- Easy to test and reason about
 
-- Testability first
-All time-based logic is designed to be tested deterministically.
-
-## What Tempora Is and Is Not
-### What Tempora Is
-
-- A scheduling and reminder calculation engine
-- A reusable domain library
-- Framework-agnostic
-- Suitable for APIs, background jobs, and services
-
-### What Tempora Is Not
-
-- A job runner
-- A background service
+### ✖ Tempora **is not**
+- A background job runner
 - A cron replacement
-- A notification system
+- A persistence or storage solution
+- A framework with hidden behavior
 
-**Tempora** focuses strictly on reasoning about time, not executing actions.
+---
 
-## Example (Conceptual)
-```
+## Installation
+
+Tempora is currently distributed as source.
+NuGet packaging is planned for a future version.
+
+---
+
+## Usage
+
+### Weekly scheduling
+
+Schedule a reminder to run every Monday and Wednesday at 10:30 UTC:
+
+```csharp
 var rule = ReminderRule
-    .Weekly(DayOfWeek.Monday)
+    .Weekly(DayOfWeek.Monday, DayOfWeek.Wednesday)
     .At(10, 30)
-    .InTimeZone("Europe/Sofia");
+    .InTimeZone("UTC");
 
-var calendar = BusinessCalendar
-    .Default()
-    .ExcludeWeekends()
-    .WithHolidays(holidayProvider);
+var calendar = BusinessCalendar.Default();
 
 var nextExecution = ReminderEngine.CalculateNext(
     rule,
-    lastExecution,
-    now,
-    calendar
-);
+    lastExecution: null,
+    now: DateTimeOffset.UtcNow,
+    calendar);
 ```
 
-## Key Features (Planned)
-- Fluent API for defining reminder and scheduling rules
-- Support for recurring schedules (daily, weekly, monthly)
-- Business calendar awareness (weekends, holidays)
-- Time zone–aware calculations
-- Missed execution handling strategies
-- Deterministic and test-friendly design
+### Monthly scheduling
 
-## Motivation
+Schedule a reminder to run on the 15th of every month:
 
-**Tempora** was created to address recurring problems found in real-world business systems:
-- Incorrect next-run calculations
-- Inconsistent reminder logic across services
-- Difficult-to-test time-based behavior
+```csharp
+var rule = ReminderRule
+    .Monthly(15)
+    .At(10, 30)
+    .InTimeZone("UTC");
+
+var calendar = BusinessCalendar.Default();
+
+var nextExecution = ReminderEngine.CalculateNext(
+    rule,
+    lastExecution: null,
+    now: DateTimeOffset.UtcNow,
+    calendar);
+```
+
+### Business calendar (weekend exclusion)
+
+Exclude weekends from execution:
+
+```csharp
+var calendar = BusinessCalendar
+    .Default()
+    .ExcludeWeekends();
+```
+
+If a scheduled execution falls on a Saturday or Sunday, it is **rolled forward
+to the next business day** by default.
+
+**This behavior is intentional and documented.**
 
 By extracting this logic into a focused library, **Tempora** aims to make scheduling predictable, reusable, and correct.
 
