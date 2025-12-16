@@ -75,6 +75,32 @@
             return candidates.Min();
         }
 
+        /// <summary>
+        /// Calculates the next <paramref name="count"/> upcoming execution times
+        /// for the specified reminder rule.
+        /// </summary>
+        /// <param name="rule">
+        /// The reminder rule defining recurrence, time of day, and time zone.
+        /// </param>
+        /// <param name="now">
+        /// The current point in time used as the calculation reference.
+        /// </param>
+        /// <param name="calendar">
+        /// The business calendar used to validate execution dates.
+        /// </param>
+        /// <param name="count">
+        /// The number of upcoming execution times to calculate. Must be greater than zero.
+        /// </param>
+        /// <param name="missedExecutionPolicy">
+        /// Specifies how missed executions should be handled during calculation.
+        /// </param>
+        /// <returns>
+        /// An ordered, read-only list containing the next <paramref name="count"/>
+        /// valid execution times.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when <paramref name="count"/> is less than or equal to zero.
+        /// </exception>
         public static IReadOnlyList<DateTimeOffset> CalculateNextOccurrences(
             ReminderRule rule,
             DateTimeOffset now,
