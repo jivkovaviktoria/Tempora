@@ -198,6 +198,16 @@ public class ReminderEngineTests
     {
         var rule = ReminderRule
             .Weekly(DayOfWeek.Monday)
+    /// <summary>
+    /// Verifies that when a monthly rule targets a day that has not yet
+    /// occurred in the current month, the execution is scheduled
+    /// within the same month.
+    /// </summary>
+    [Fact]
+    public void CalculateNext_WhenMonthlyRuleAndDayIsInFuture_ReturnsSameMonth()
+    {
+        var rule = ReminderRule
+            .Monthly(15)
             .At(10, 30)
             .InTimeZone("UTC");
 
@@ -229,6 +239,162 @@ public class ReminderEngineTests
                 DateTimeOffset.UtcNow,
                 BusinessCalendar.Default(),
                 count: 0));
+        var now = new DateTimeOffset(
+            year: 2025,
+            month: 1,
+            day: 10,
+            hour: 9,
+            minute: 0,
+            second: 0,
+            offset: TimeSpan.Zero);
+
+        var nextExecution = ReminderEngine.CalculateNext(
+            rule,
+            lastExecution: null,
+            now,
+            calendar);
+
+        var expected = new DateTimeOffset(
+            year: 2025,
+            month: 1,
+            day: 15,
+            hour: 10,
+            minute: 30,
+            second: 0,
+            offset: TimeSpan.Zero);
+
+        Assert.Equal(expected, nextExecution);
+    }
+
+    /// <summary>
+    /// Verifies that when a monthly rule targets a day that has already
+    /// passed in the current month, the execution is scheduled
+    /// in the next month.
+    /// </summary>
+    [Fact]
+    public void CalculateNext_WhenMonthlyRuleAndDayHasPassed_ReturnsNextMonth()
+    {
+        var rule = ReminderRule
+            .Monthly(15)
+            .At(10, 30)
+            .InTimeZone("UTC");
+
+        var calendar = BusinessCalendar.Default();
+
+        var now = new DateTimeOffset(
+            year: 2025,
+            month: 1,
+            day: 20,
+            hour: 9,
+            minute: 0,
+            second: 0,
+            offset: TimeSpan.Zero);
+
+        var nextExecution = ReminderEngine.CalculateNext(
+            rule,
+            lastExecution: null,
+            now,
+            calendar);
+
+        var expected = new DateTimeOffset(
+            year: 2025,
+            month: 2,
+            day: 15,
+            hour: 10,
+            minute: 30,
+            second: 0,
+            offset: TimeSpan.Zero);
+
+        Assert.Equal(expected, nextExecution);
+    }
+
+    /// <summary>
+    /// Verifies that when a monthly rule specifies a day that does not exist
+    /// in the current month, the execution is rolled forward to the next
+    /// month where the day exists.
+    /// </summary>
+    [Fact]
+    public void CalculateNext_WhenMonthlyRuleDayDoesNotExist_RollsForwardToNextValidMonth()
+    {
+        var rule = ReminderRule
+            .Monthly(31)
+            .At(10, 30)
+            .InTimeZone("UTC");
+
+        var calendar = BusinessCalendar.Default();
+
+        var now = new DateTimeOffset(
+            year: 2025,
+            month: 2,
+            day: 1,   // February
+            hour: 9,
+            minute: 0,
+            second: 0,
+            offset: TimeSpan.Zero);
+
+        var nextExecution = ReminderEngine.CalculateNext(
+            rule,
+            lastExecution: null,
+            now,
+            calendar);
+
+        var expected = new DateTimeOffset(
+            year: 2025,
+            month: 3,  // March
+            day: 31,
+            hour: 10,
+            minute: 30,
+            second: 0,
+            offset: TimeSpan.Zero);
+
+        Assert.Equal(expected, nextExecution);
+    }
+
+    /// <summary>
+    /// Verifies that when a monthly execution date falls on a weekend and
+    /// weekend exclusion is enabled, the execution is rolled forward to
+    /// the next business day.
+    /// </summary>
+    [Fact]
+    public void CalculateNext_WhenMonthlyRuleFallsOnWeekendAndWeekendsExcluded_RollsToNextBusinessDay()
+    {
+        var rule = ReminderRule
+            .Monthly(15)
+            .At(10, 30)
+            .InTimeZone("UTC");
+
+        var calendar = BusinessCalendar
+            .Default()
+            .ExcludeWeekends();
+
+        var now = new DateTimeOffset(
+            year: 2025,
+            month: 3,
+            day: 1,
+            hour: 9,
+            minute: 0,
+            second: 0,
+            offset: TimeSpan.Zero
+        );
+
+        var nextExecution = ReminderEngine.CalculateNext(
+            rule,
+            lastExecution: null,
+            now,
+            calendar
+        );
+
+        var expected = new DateTimeOffset(
+            year: 2025,
+            month: 3,
+            day: 17,  // Monday
+            hour: 10,
+            minute: 30,
+            second: 0,
+            offset: TimeSpan.Zero
+        );
+
+        Assert.Equal(expected, nextExecution);
     }
 
 }

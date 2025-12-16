@@ -45,6 +45,30 @@
         }
 
         /// <summary>
+        /// Creates a monthly reminder rule for the specified day of the month.
+        /// </summary>
+        /// <param name="dayOfMonth">
+        /// The day of the month on which the reminder should occur (1–31).
+        /// </param>
+        /// <returns>A new <see cref="ReminderRule"/> configured for monthly recurrence.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// Thrown when <paramref name="dayOfMonth"/> is outside the range 1–31.
+        /// </exception>
+        public static ReminderRule Monthly(int dayOfMonth)
+        {
+            if (dayOfMonth < 1 || dayOfMonth > 31)
+            {
+                throw new ArgumentOutOfRangeException(nameof(dayOfMonth), "Day of month must be in the range 1–31.");
+            }
+
+            return new ReminderRule
+            {
+                DayOfMonth = dayOfMonth,
+                DaysOfWeek = null
+            };
+        }
+
+        /// <summary>
         /// Specifies the time of day at which the reminder should occur.
         /// </summary>
         /// <param name="hour">Hour component (0–23).</param>
