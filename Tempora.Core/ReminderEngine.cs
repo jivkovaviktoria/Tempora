@@ -74,5 +74,32 @@
 
             return candidates.Min();
         }
+
+        public static IReadOnlyList<DateTimeOffset> CalculateNextOccurrences(
+            ReminderRule rule,
+            DateTimeOffset now,
+            BusinessCalendar calendar,
+            int count,
+            MissedExecutionPolicy missedExecutionPolicy = MissedExecutionPolicy.RunLastOnly)
+        {
+            if (count <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), "Count must be greater than zero.");
+            }
+
+            var results = new List<DateTimeOffset>(count);
+            var currentNow = now;
+
+            for (var i = 0; i < count; i++)
+            {
+                var next = CalculateNext(rule, lastExecution: null, currentNow, calendar, missedExecutionPolicy);
+
+                results.Add(next);
+                currentNow = next;
+            }
+
+            return results;
+        }
+
     }
 }
