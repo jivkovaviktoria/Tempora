@@ -193,6 +193,11 @@ public class ReminderEngineTests
         Assert.Equal(expected, nextExecution);
     }
 
+    [Fact]
+    public void CalculateNextOccurrences_WeeklyRule_ReturnsNextThreeOccurrences()
+    {
+        var rule = ReminderRule
+            .Weekly(DayOfWeek.Monday)
     /// <summary>
     /// Verifies that when a monthly rule targets a day that has not yet
     /// occurred in the current month, the execution is scheduled
@@ -208,6 +213,32 @@ public class ReminderEngineTests
 
         var calendar = BusinessCalendar.Default();
 
+        var now = new DateTimeOffset(2025, 1, 6, 9, 0, 0, TimeSpan.Zero);
+
+        var occurrences = ReminderEngine.CalculateNextOccurrences(
+            rule,
+            now,
+            calendar,
+            count: 3
+        );
+
+        Assert.Equal(3, occurrences.Count);
+        Assert.Equal(new DateTimeOffset(2025, 1, 6, 10, 30, 0, TimeSpan.Zero), occurrences[0]);
+        Assert.Equal(new DateTimeOffset(2025, 1, 13, 10, 30, 0, TimeSpan.Zero), occurrences[1]);
+        Assert.Equal(new DateTimeOffset(2025, 1, 20, 10, 30, 0, TimeSpan.Zero), occurrences[2]);
+    }
+
+    [Fact]
+    public void CalculateNextOccurrences_WhenCountIsZero_Throws()
+    {
+        var rule = ReminderRule.Weekly(DayOfWeek.Monday).At(10, 0);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            ReminderEngine.CalculateNextOccurrences(
+                rule,
+                DateTimeOffset.UtcNow,
+                BusinessCalendar.Default(),
+                count: 0));
         var now = new DateTimeOffset(
             year: 2025,
             month: 1,
