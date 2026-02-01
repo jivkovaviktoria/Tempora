@@ -1,4 +1,6 @@
-﻿namespace Tempora.Core
+﻿using Tempora.Core.Exceptions;
+
+namespace Tempora.Core
 {
     /// <summary>
     /// Provides functionality for calculating reminder execution times
@@ -33,7 +35,7 @@
 
             if (rule.DaysOfWeek is null || rule.DaysOfWeek.Count == 0)
             {
-                throw new InvalidOperationException("Weekly rule must define at least one weekday.");
+                throw new InvalidReminderRuleException("Weekly rule must define at least one weekday.");
             }
 
             var nowInZone = TimeZoneInfo.ConvertTime(now, rule.TimeZone);
@@ -74,7 +76,7 @@
 
             if (candidates.Count == 0)
             {
-                throw new InvalidOperationException("Unable to calculate next execution.");
+                throw new SchedulingCalculationException("Unable to calculate next execution for the provided rule and calendar.");
             }
 
             return candidates.Min();
@@ -130,6 +132,8 @@
             }
 
             return results;
+        }
+
         /// Calculates the next execution time for a monthly reminder rule.
         /// </summary>
         private static DateTimeOffset CalculateNextMonthly(ReminderRule rule, DateTimeOffset now, BusinessCalendar calendar)
@@ -171,7 +175,7 @@
                 return new DateTimeOffset(executionDateTime, offset);
             }
 
-            throw new InvalidOperationException("Unable to calculate next monthly execution within a one-year window.");
+            throw new SchedulingCalculationException("Unable to calculate next monthly execution within a one-year window.");
         }
 
 
